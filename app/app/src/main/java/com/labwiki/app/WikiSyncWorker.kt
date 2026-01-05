@@ -87,8 +87,18 @@ class WikiSyncWorker(
                 localVersionFile.writeText(remoteVersionRaw)
             }
 
+<<<<<<< ours
             Result.success()
         } catch (ex: Exception) {
+=======
+            val manager = WikiManager(applicationContext)
+            manager.setSyncState(wikiId, SyncState.UP_TO_DATE)
+            manager.setLastSyncTimestamp(wikiId, System.currentTimeMillis())
+            Result.success()
+        } catch (ex: Exception) {
+            val manager = WikiManager(applicationContext)
+            manager.setSyncState(wikiId, SyncState.ERROR)
+>>>>>>> theirs
             Result.retry()
         }
     }

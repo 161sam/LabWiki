@@ -18,21 +18,58 @@
     .grid {
       display: grid;
       gap: 16px;
+<<<<<<< ours
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
     a.card {
       display: block;
+=======
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+>>>>>>> theirs
       padding: 16px;
       background: white;
       border-radius: 12px;
       text-decoration: none;
       color: inherit;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+<<<<<<< ours
     }
     .card h2 {
       margin: 0 0 8px 0;
       font-size: 18px;
     }
+=======
+      position: relative;
+    }
+    .card h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 14px;
+      color: #5c6b85;
+    }
+    .favorite-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .favorite-btn.active {
+      color: #f4b400;
+    }
+>>>>>>> theirs
     .hint {
       margin-top: 24px;
       font-size: 14px;
@@ -45,6 +82,7 @@
   <p>Wähle ein Wiki aus. Inhalte werden bei Bedarf lokal gespeichert.</p>
 
   <div class="grid">
+<<<<<<< ours
     <a class="card" href="app://openWiki?wiki=pentest-lab">
       <h2>Pentest Lab</h2>
       <p>Beispiel-Wiki mit Platzhalter-URLs.</p>
@@ -68,5 +106,130 @@
   </div>
 
   <p class="hint">Offline-Modus: Öffne ein Wiki einmal online, um es zu cachen.</p>
+=======
+    <div class="card" data-id="pentest-lab">
+      <button class="favorite-btn" data-action="favorite">☆</button>
+      <h2>Pentest Lab</h2>
+      <p>Beispiel-Wiki mit Platzhalter-URLs.</p>
+      <div class="meta">
+        <span class="cache-status">❌ Nicht gespeichert</span>
+        <span class="sync-status">-</span>
+      </div>
+      <a class="open-link" href="app://openWiki?wiki=pentest-lab">Öffnen</a>
+    </div>
+    <div class="card" data-id="networking">
+      <button class="favorite-btn" data-action="favorite">☆</button>
+      <h2>Networking</h2>
+      <p>Netzwerk-Labs und Grundlagen.</p>
+      <div class="meta">
+        <span class="cache-status">❌ Nicht gespeichert</span>
+        <span class="sync-status">-</span>
+      </div>
+      <a class="open-link" href="app://openWiki?wiki=networking">Öffnen</a>
+    </div>
+    <div class="card" data-id="reverse-engineering">
+      <button class="favorite-btn" data-action="favorite">☆</button>
+      <h2>Reverse Engineering</h2>
+      <p>Analysen, Tools und Workflows.</p>
+      <div class="meta">
+        <span class="cache-status">❌ Nicht gespeichert</span>
+        <span class="sync-status">-</span>
+      </div>
+      <a class="open-link" href="app://openWiki?wiki=reverse-engineering">Öffnen</a>
+    </div>
+    <div class="card" data-id="cloud-security">
+      <button class="favorite-btn" data-action="favorite">☆</button>
+      <h2>Cloud Security</h2>
+      <p>Best Practices &amp; Checklisten.</p>
+      <div class="meta">
+        <span class="cache-status">❌ Nicht gespeichert</span>
+        <span class="sync-status">-</span>
+      </div>
+      <a class="open-link" href="app://openWiki?wiki=cloud-security">Öffnen</a>
+    </div>
+    <div class="card" data-id="forensics">
+      <button class="favorite-btn" data-action="favorite">☆</button>
+      <h2>Forensics</h2>
+      <p>Artefakte, Tools und Playbooks.</p>
+      <div class="meta">
+        <span class="cache-status">❌ Nicht gespeichert</span>
+        <span class="sync-status">-</span>
+      </div>
+      <a class="open-link" href="app://openWiki?wiki=forensics">Öffnen</a>
+    </div>
+  </div>
+
+  <p class="hint">Offline-Modus: Öffne ein Wiki einmal online, um es zu cachen.</p>
+
+  <script>
+    const stateLabels = {
+      "idle": "Nicht gespeichert",
+      "syncing": "Sync läuft…",
+      "error": "Sync-Fehler",
+      "up-to-date": "Aktuell"
+    };
+
+    function formatSyncText(item, hasNetwork) {
+      if (!hasNetwork) {
+        return "Offline";
+      }
+      return stateLabels[item.syncState] || "Aktuell";
+    }
+
+    function refreshHub() {
+      if (!window.LabWiki || !window.LabWiki.getHubState) {
+        return;
+      }
+      const raw = window.LabWiki.getHubState();
+      const state = JSON.parse(raw);
+      const cards = document.querySelectorAll(".card[data-id]");
+      cards.forEach((card) => {
+        const id = card.getAttribute("data-id");
+        const item = state.wikis.find((entry) => entry.id === id);
+        if (!item) {
+          return;
+        }
+        const cacheStatus = card.querySelector(".cache-status");
+        const syncStatus = card.querySelector(".sync-status");
+        const favoriteBtn = card.querySelector(".favorite-btn");
+        if (item.cached) {
+          cacheStatus.textContent = "✅ Offline verfügbar";
+        } else {
+          cacheStatus.textContent = "❌ Nicht gespeichert";
+        }
+        syncStatus.textContent = formatSyncText(item, state.hasNetwork);
+        if (item.favorite) {
+          favoriteBtn.textContent = "★";
+          favoriteBtn.classList.add("active");
+        } else {
+          favoriteBtn.textContent = "☆";
+          favoriteBtn.classList.remove("active");
+        }
+      });
+    }
+
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      if (target.dataset.action === "favorite") {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = target.closest(".card");
+        if (!card) {
+          return;
+        }
+        const id = card.getAttribute("data-id");
+        if (id && window.LabWiki && window.LabWiki.toggleFavorite) {
+          window.LabWiki.toggleFavorite(id);
+        }
+      }
+    });
+
+    window.LabWikiHub = { refresh: refreshHub };
+    refreshHub();
+  </script>
+>>>>>>> theirs
 </body>
 </html>

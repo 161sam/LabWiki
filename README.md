@@ -2,6 +2,11 @@
 
 LabWiki ist eine Android-App, die mehrere Docusaurus-Wikis in einem WebView bündelt und
 on-demand offline verfügbar macht. Jedes Wiki wird erst beim Öffnen zwischengespeichert.
+<<<<<<< ours
+=======
+Ab v0.2 gibt es Favoriten, Statusanzeigen sowie eine einfache Suche innerhalb des
+aktuell geöffneten Wikis.
+>>>>>>> theirs
 
 ## Lokaler Build
 
@@ -36,3 +41,19 @@ Die App lädt `version.json`, vergleicht `commit` (bevorzugt) bzw. `version`, un
 - Ist ein Wiki bereits gecached, lädt die App die lokale Version.
 - Wenn der Cache fehlt, lädt die App die Online-Start-URL.
 - Ohne Netzwerk und ohne Cache wird `assets/hub/offline.html` angezeigt.
+<<<<<<< ours
+=======
+
+## v0.2: Favoriten, Status & Suche
+
+- Favoriten (⭐) werden in `SharedPreferences` gespeichert und im Hub angezeigt.
+- Cache-Status: ✅ bedeutet lokal gespeichert, ❌ bedeutet nicht gespeichert.
+- Sync-Status: „Sync läuft…“, „Aktuell“, „Sync-Fehler“ oder „Offline“.
+- Suche: Das Suchfeld in der AppBar durchsucht das aktuell geöffnete Wiki (WebView `findAllAsync`).
+
+## v0.2 vs. v0.1 (Abgrenzung)
+
+- ✅ Favoriten, Status-UI und lokale Suche sind hinzugekommen.
+- ❌ Keine globale Wiki-übergreifende Suche.
+- ❌ Keine serverseitige Indizierung oder Backend-Features.
+>>>>>>> theirs
