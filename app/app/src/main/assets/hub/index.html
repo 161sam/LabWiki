@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LabWiki Hub</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f5f7fb;
+      color: #1f2a44;
+    }
+    h1 {
+      margin-top: 0;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    a.card {
+      display: block;
+      padding: 16px;
+      background: white;
+      border-radius: 12px;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .card h2 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+    }
+    .hint {
+      margin-top: 24px;
+      font-size: 14px;
+      color: #5c6b85;
+    }
+  </style>
+</head>
+<body>
+  <h1>LabWiki Hub</h1>
+  <p>Wähle ein Wiki aus. Inhalte werden bei Bedarf lokal gespeichert.</p>
+
+  <div class="grid">
+    <a class="card" href="app://openWiki?wiki=pentest-lab">
+      <h2>Pentest Lab</h2>
+      <p>Beispiel-Wiki mit Platzhalter-URLs.</p>
+    </a>
+    <a class="card" href="app://openWiki?wiki=networking">
+      <h2>Networking</h2>
+      <p>Netzwerk-Labs und Grundlagen.</p>
+    </a>
+    <a class="card" href="app://openWiki?wiki=reverse-engineering">
+      <h2>Reverse Engineering</h2>
+      <p>Analysen, Tools und Workflows.</p>
+    </a>
+    <a class="card" href="app://openWiki?wiki=cloud-security">
+      <h2>Cloud Security</h2>
+      <p>Best Practices &amp; Checklisten.</p>
+    </a>
+    <a class="card" href="app://openWiki?wiki=forensics">
+      <h2>Forensics</h2>
+      <p>Artefakte, Tools und Playbooks.</p>
+    </a>
+  </div>
+
+  <p class="hint">Offline-Modus: Öffne ein Wiki einmal online, um es zu cachen.</p>
+</body>
+</html>
