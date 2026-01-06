@@ -1,5 +1,11 @@
 package com.labwiki.app
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.os.Build
 import android.os.Bundle
 import android.webkit.WebResourceResponse
 import android.webkit.WebResourceRequest
@@ -25,6 +31,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var wikiManager: WikiManager
     private lateinit var searchRepository: WikiSearchRepository
     private var currentQuery: String? = null
+    private var connectivityManager: ConnectivityManager? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,6 +109,16 @@ class MainActivity : AppCompatActivity() {
         refreshHub()
     }
 
+    override fun onStart() {
+        super.onStart()
+        registerNetworkCallback()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unregisterNetworkCallback()
+    }
+
     private fun openWiki(id: String) {
         val def = WikiRegistry.getById(id) ?: return
         val cached = wikiManager.isCached(def.id)
@@ -139,6 +157,44 @@ class MainActivity : AppCompatActivity() {
             val script = "window.LabWikiHub && window.LabWikiHub.refresh && window.LabWikiHub.refresh();"
             webView.evaluateJavascript(script, null)
         }
+    }
+
+    private fun registerNetworkCallback() {
+        if (networkCallback != null) return
+        val manager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        connectivityManager = manager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                runOnUiThread { refreshHub() }
+            }
+
+            override fun onLost(network: Network) {
+                runOnUiThread { refreshHub() }
+            }
+
+            override fun onCapabilitiesChanged(
+                network: Network,
+                networkCapabilities: NetworkCapabilities
+            ) {
+                runOnUiThread { refreshHub() }
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            manager.registerDefaultNetworkCallback(callback)
+        } else {
+            val request = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
+            manager.registerNetworkCallback(request, callback)
+        }
+        networkCallback = callback
+    }
+
+    private fun unregisterNetworkCallback() {
+        val manager = connectivityManager ?: return
+        val callback = networkCallback ?: return
+        manager.unregisterNetworkCallback(callback)
+        networkCallback = null
     }
 
     override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
