@@ -30,7 +30,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var assetLoader: WebViewAssetLoader
     private lateinit var wikiManager: WikiManager
     private lateinit var searchRepository: WikiSearchRepository
+    private lateinit var topToolbar: androidx.appcompat.widget.Toolbar
     private var currentQuery: String? = null
+    private var currentWikiId: String? = null
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
@@ -38,7 +40,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setSupportActionBar(findViewById(R.id.topToolbar))
+        topToolbar = findViewById(R.id.topToolbar)
+        setSupportActionBar(topToolbar)
+        topToolbar.setOnClickListener { loadHub() }
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
 
         wikiManager = WikiManager(this)
         searchRepository = WikiSearchRepository(this)
@@ -75,7 +80,7 @@ class MainActivity : AppCompatActivity() {
                     return true
                 }
 
-                if (!wikiManager.isNetworkAvailable() && isRemoteUrl(uri.toString())) {
+                if (!wikiManager.isOnlineForRemote() && isRemoteUrl(uri.toString())) {
                     webView.loadUrl("file:///android_asset/hub/offline.html")
                     return true
                 }
@@ -84,7 +89,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                 val url = request.url.toString()
-                if (!wikiManager.isNetworkAvailable() && isRemoteUrl(url)) {
+                if (!wikiManager.isOnlineForRemote() && isRemoteUrl(url)) {
                     return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
                 }
                 return assetLoader.shouldInterceptRequest(request.url)
@@ -92,6 +97,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
+                updateTopBarForUrl(url)
                 refreshHub()
                 currentQuery?.let { query ->
                     if (query.isNotBlank()) {
@@ -101,7 +107,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        webView.loadUrl("file:///android_asset/hub/index.html")
+        val hubUrl = "file:///android_asset/hub/index.html"
+        webView.loadUrl(hubUrl)
+        updateTopBarForUrl(hubUrl)
+
+        onBackPressedDispatcher.addCallback(this) {
+            when {
+                webView.canGoBack() -> webView.goBack()
+                !isHubUrl(webView.url) -> loadHub()
+                else -> finish()
+            }
+        }
     }
 
     override fun onResume() {
@@ -122,13 +138,17 @@ class MainActivity : AppCompatActivity() {
     private fun openWiki(id: String) {
         val def = WikiRegistry.getById(id) ?: return
         val cached = wikiManager.isCached(def.id)
-        val online = wikiManager.isNetworkAvailable()
+        val online = wikiManager.isOnlineForRemote()
+        currentWikiId = def.id
 
-        when {
-            cached -> webView.loadUrl(wikiManager.localUrl(def.id))
-            online -> webView.loadUrl(def.remoteStartUrl)
-            else -> webView.loadUrl("file:///android_asset/hub/offline.html")
+        val targetUrl = when {
+            cached -> wikiManager.localUrl(def.id)
+            online -> def.remoteStartUrl
+            else -> "file:///android_asset/hub/offline.html"
         }
+        webView.loadUrl(targetUrl)
+        updateTopBarForUrl(targetUrl)
+        observeSync(def.id)
 
         if (cached && wikiManager.getIndexStatus(def.id) != IndexStatus.READY) {
             lifecycleScope.launch {
@@ -140,16 +160,19 @@ class MainActivity : AppCompatActivity() {
 
     private fun openPage(wikiId: String, pageUrl: String) {
         val cached = wikiManager.isCached(wikiId)
-        val online = wikiManager.isNetworkAvailable()
+        val online = wikiManager.isOnlineForRemote()
+        currentWikiId = wikiId
 
-        when {
-            cached -> webView.loadUrl(wikiManager.localPageUrl(wikiId, pageUrl))
+        val targetUrl = when {
+            cached -> wikiManager.localPageUrl(wikiId, pageUrl)
             online -> {
                 val def = WikiRegistry.getById(wikiId) ?: return
-                webView.loadUrl(def.remoteStartUrl)
+                def.remoteStartUrl
             }
-            else -> webView.loadUrl("file:///android_asset/hub/offline.html")
+            else -> "file:///android_asset/hub/offline.html"
         }
+        webView.loadUrl(targetUrl)
+        updateTopBarForUrl(targetUrl)
     }
 
     private fun refreshHub() {
@@ -227,6 +250,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
         return when (item.itemId) {
+            android.R.id.home -> {
+                loadHub()
+                true
+            }
             R.id.action_clear_cache -> {
                 wikiManager.clearCache()
                 refreshHub()
@@ -282,4 +309,40 @@ class MainActivity : AppCompatActivity() {
         if (!url.startsWith("http")) return false
         return !url.startsWith("https://appassets.androidplatform.net/")
     }
+
+    private fun isHubUrl(url: String?): Boolean {
+        return url?.startsWith("file:///android_asset/hub/") == true
+    }
+
+    private fun loadHub() {
+        val hubUrl = "file:///android_asset/hub/index.html"
+        webView.loadUrl(hubUrl)
+        currentWikiId = null
+        updateTopBarForUrl(hubUrl)
+    }
+
+    private fun updateTopBarForUrl(url: String?) {
+        val inHub = isHubUrl(url)
+        val title = if (inHub) {
+            "LabWiki"
+        } else {
+            currentWikiId?.let { id -> WikiRegistry.getById(id)?.name } ?: "LabWiki"
+        }
+        supportActionBar?.title = title
+        supportActionBar?.setDisplayHomeAsUpEnabled(!inHub)
+        supportActionBar?.setHomeButtonEnabled(!inHub)
+    }
+
+    private fun observeSync(wikiId: String) {
+        val workName = "wiki_sync_$wikiId"
+        val workManager = androidx.work.WorkManager.getInstance(this)
+        workManager.getWorkInfosForUniqueWorkLiveData(workName).observe(this) { infos ->
+            if (infos.any { it.state == androidx.work.WorkInfo.State.SUCCEEDED }) {
+                if (isHubUrl(webView.url)) {
+                    refreshHub()
+                }
+            }
+        }
+    }
+
 }

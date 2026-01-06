@@ -3,6 +3,7 @@ package com.labwiki.app
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Build
 import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
@@ -31,7 +32,7 @@ class WikiManager(private val context: Context) {
     }
 
     fun syncIfNeeded(def: WikiDef) {
-        if (!isNetworkAvailable()) return
+        if (!isOnlineForSync()) return
 
         setSyncState(def.id, SyncState.SYNCING)
 
@@ -54,12 +55,29 @@ class WikiManager(private val context: Context) {
     }
 
     fun isNetworkAvailable(): Boolean {
+        return isOnlineForRemote()
+    }
+
+    fun isOnlineForRemote(): Boolean {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+
+    fun isOnlineForSync(): Boolean {
+        val connectivityManager =
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        if (!capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
+        } else {
+            true
+        }
     }
 
     fun isFavorite(wikiId: String): Boolean = getFavorites().contains(wikiId)
@@ -117,7 +135,7 @@ class WikiManager(private val context: Context) {
     fun getHubStateJson(): String {
         val root = JSONObject()
         val list = JSONArray()
-        val hasNetwork = isNetworkAvailable()
+        val hasNetwork = isOnlineForRemote()
 
         for (def in WikiRegistry.wikis) {
             val item = JSONObject()

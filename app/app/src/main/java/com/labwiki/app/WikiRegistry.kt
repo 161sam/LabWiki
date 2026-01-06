@@ -10,13 +10,15 @@ data class WikiDef(
 )
 
 object WikiRegistry {
+    private fun offlineBase(url: String): String = url.trimEnd('/')
+
     val wikis: List<WikiDef> = listOf(
         WikiDef(
             id = "pentest-lab-blue-red-team-training",
             name = "Pentest Lab: Blue/Red Team Training",
             description = "Trainingspfade für Blue- und Red-Team-Übungen.",
             remoteStartUrl = "https://161sam.github.io/pentest-lab-blue-red-team-training/",
-            remoteOfflineBase = "https://161sam.github.io/pentest-lab-blue-red-team-training/offline",
+            remoteOfflineBase = offlineBase("https://161sam.github.io/pentest-lab-blue-red-team-training/offline"),
             tags = listOf("Pentest", "Blue Team", "Red Team")
         ),
         WikiDef(
@@ -24,7 +26,7 @@ object WikiRegistry {
             name = "Smolotchi",
             description = "Kompakte Labs und Cheatsheets für Pentest-Themen.",
             remoteStartUrl = "https://161sam.github.io/smolotchi/",
-            remoteOfflineBase = "https://161sam.github.io/smolotchi/offline",
+            remoteOfflineBase = offlineBase("https://161sam.github.io/smolotchi/offline"),
             tags = listOf("Pentest", "Cheatsheet")
         ),
         WikiDef(
@@ -32,7 +34,7 @@ object WikiRegistry {
             name = "Forensic Playbook",
             description = "Playbooks und Prozesse für Forensik-Aufgaben.",
             remoteStartUrl = "https://161sam.github.io/Forensic-Playbook/",
-            remoteOfflineBase = "https://161sam.github.io/Forensic-Playbook/offline",
+            remoteOfflineBase = offlineBase("https://161sam.github.io/Forensic-Playbook/offline"),
             tags = listOf("Forensics", "Incident Response")
         ),
         WikiDef(
@@ -40,7 +42,7 @@ object WikiRegistry {
             name = "Pentest Home Lab SBCs",
             description = "Pentest-Home-Lab-Projekte für Single-Board-Computer.",
             remoteStartUrl = "https://161sam.github.io/Pentest-Home-Lab-SBCs/",
-            remoteOfflineBase = "https://161sam.github.io/Pentest-Home-Lab-SBCs/offline",
+            remoteOfflineBase = offlineBase("https://161sam.github.io/Pentest-Home-Lab-SBCs/offline"),
             tags = listOf("Pentest", "Home Lab", "SBC")
         ),
         WikiDef(
@@ -48,7 +50,7 @@ object WikiRegistry {
             name = "Pentest Lab Shannon",
             description = "Labs und Notizen für das Shannon-Pentest-Lab.",
             remoteStartUrl = "https://161sam.github.io/Pentest-Lab-shannon/",
-            remoteOfflineBase = "https://161sam.github.io/Pentest-Lab-shannon/offline",
+            remoteOfflineBase = offlineBase("https://161sam.github.io/Pentest-Lab-shannon/offline"),
             tags = listOf("Pentest", "Lab")
         ),
         WikiDef(
@@ -56,7 +58,7 @@ object WikiRegistry {
             name = "Pentest Lab CAI",
             description = "Pentest-Lab-Inhalte rund um CAI.",
             remoteStartUrl = "https://161sam.github.io/Pentest-Lab-CAI/",
-            remoteOfflineBase = "https://161sam.github.io/Pentest-Lab-CAI/offline",
+            remoteOfflineBase = offlineBase("https://161sam.github.io/Pentest-Lab-CAI/offline"),
             tags = listOf("Pentest", "Lab")
         ),
         WikiDef(
@@ -64,7 +66,7 @@ object WikiRegistry {
             name = "Pentest Lab PentestGPT",
             description = "Guides und Übungen zum PentestGPT-Lab.",
             remoteStartUrl = "https://161sam.github.io/Pentest-Lab-PentestGPT/",
-            remoteOfflineBase = "https://161sam.github.io/Pentest-Lab-PentestGPT/offline",
+            remoteOfflineBase = offlineBase("https://161sam.github.io/Pentest-Lab-PentestGPT/offline"),
             tags = listOf("Pentest", "AI")
         )
     )
