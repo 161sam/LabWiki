@@ -28,10 +28,9 @@ class WikiSyncWorker(
 
         try {
             val normalizedBase = remoteOfflineBase.trimEnd('/')
-            val remoteVersionUrl = "$normalizedBase/version.json"
-            val remoteZipUrl = "$normalizedBase/build.zip"
-
-            val remoteVersionRaw = fetchText(remoteVersionUrl)
+            val candidateBases = buildBaseCandidates(normalizedBase)
+            val versionResult = fetchTextWithFallback(candidateBases, "version.json")
+            val remoteVersionRaw = versionResult.body
             val remoteVersionJson = JSONObject(remoteVersionRaw)
             val remoteCommit = remoteVersionJson.optString("commit", "")
             val remoteVersion = remoteVersionJson.optString("version", "")
@@ -53,7 +52,8 @@ class WikiSyncWorker(
 
             if (needsUpdate) {
                 val zipFile = File(applicationContext.cacheDir, "wiki-$wikiId-build.zip")
-                downloadFile(remoteZipUrl, zipFile)
+                val zipBases = listOf(versionResult.base) + candidateBases.filterNot { it == versionResult.base }
+                downloadFileWithFallback(zipBases, "build.zip", zipFile)
 
                 val tempDir = File(applicationContext.cacheDir, "wiki-$wikiId-${System.currentTimeMillis()}")
                 if (!tempDir.mkdirs()) throw IllegalStateException("Failed to create temp dir")
@@ -69,6 +69,9 @@ class WikiSyncWorker(
                 }
 
                 if (!wikiDir.exists()) throw IllegalStateException("Failed to move wiki content")
+                if (!File(wikiDir, "index.html").exists()) {
+                    throw IllegalStateException("index.html missing after sync")
+                }
 
                 localVersionFile.writeText(remoteVersionRaw)
             }
@@ -85,23 +88,69 @@ class WikiSyncWorker(
         }
     }
 
-    private fun fetchText(url: String): String {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        connection.connectTimeout = 10000
-        connection.readTimeout = 15000
-        return connection.inputStream.bufferedReader().use { it.readText() }
-    }
-
-    private fun downloadFile(url: String, destination: File) {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        connection.connectTimeout = 10000
-        connection.readTimeout = 20000
-        connection.inputStream.use { input ->
-            destination.outputStream().use { output ->
-                input.copyTo(output)
+    private fun fetchTextWithFallback(bases: List<String>, path: String): FetchResult {
+        var lastError: Exception? = null
+        for (base in bases) {
+            val url = "$base/$path"
+            try {
+                val connection = URL(url).openConnection() as HttpURLConnection
+                connection.connectTimeout = 10000
+                connection.readTimeout = 15000
+                connection.instanceFollowRedirects = true
+                val code = connection.responseCode
+                if (code == HttpURLConnection.HTTP_NOT_FOUND) {
+                    continue
+                }
+                if (code >= 400) {
+                    throw IllegalStateException("HTTP $code for $url")
+                }
+                val body = connection.inputStream.bufferedReader().use { it.readText() }
+                return FetchResult(base, body)
+            } catch (ex: Exception) {
+                lastError = ex
             }
         }
+        throw lastError ?: IllegalStateException("No reachable base for $path")
     }
+
+    private fun downloadFileWithFallback(bases: List<String>, path: String, destination: File) {
+        var lastError: Exception? = null
+        for (base in bases) {
+            val url = "$base/$path"
+            try {
+                val connection = URL(url).openConnection() as HttpURLConnection
+                connection.connectTimeout = 10000
+                connection.readTimeout = 20000
+                connection.instanceFollowRedirects = true
+                val code = connection.responseCode
+                if (code == HttpURLConnection.HTTP_NOT_FOUND) {
+                    continue
+                }
+                if (code >= 400) {
+                    throw IllegalStateException("HTTP $code for $url")
+                }
+                connection.inputStream.use { input ->
+                    destination.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                return
+            } catch (ex: Exception) {
+                lastError = ex
+            }
+        }
+        throw lastError ?: IllegalStateException("No reachable base for $path")
+    }
+
+    private fun buildBaseCandidates(base: String): List<String> {
+        val candidates = mutableListOf(base)
+        if (!base.endsWith("/offline")) {
+            candidates.add("$base/offline")
+        }
+        return candidates
+    }
+
+    private data class FetchResult(val base: String, val body: String)
 
     private fun unzip(zipFile: File, destDir: File) {
         ZipInputStream(BufferedInputStream(zipFile.inputStream())).use { zis ->
