@@ -1,18 +1,29 @@
 package com.labwiki.app
 
 import android.os.Bundle
+import android.webkit.WebResourceResponse
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewAssetLoader
+import com.labwiki.app.data.db.WikiSearchIndexer
+import com.labwiki.app.data.db.WikiSearchRepository
 import java.io.File
+import java.io.ByteArrayInputStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var assetLoader: WebViewAssetLoader
     private lateinit var wikiManager: WikiManager
+    private lateinit var searchRepository: WikiSearchRepository
     private var currentQuery: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,6 +33,7 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(findViewById(R.id.topToolbar))
 
         wikiManager = WikiManager(this)
+        searchRepository = WikiSearchRepository(this)
         webView = findViewById(R.id.wikiWebView)
 
         webView.settings.javaScriptEnabled = true
@@ -46,11 +58,29 @@ class MainActivity : AppCompatActivity() {
                     }
                     return true
                 }
+                if (uri.scheme == "app" && uri.host == "openPage") {
+                    val wikiId = uri.getQueryParameter("wiki")
+                    val page = uri.getQueryParameter("page")
+                    if (!wikiId.isNullOrBlank() && !page.isNullOrBlank()) {
+                        openPage(wikiId, page)
+                    }
+                    return true
+                }
+
+                if (!wikiManager.isNetworkAvailable() && isRemoteUrl(uri.toString())) {
+                    webView.loadUrl("file:///android_asset/hub/offline.html")
+                    return true
+                }
                 return false
             }
 
-            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest) =
-                assetLoader.shouldInterceptRequest(request.url)
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                val url = request.url.toString()
+                if (!wikiManager.isNetworkAvailable() && isRemoteUrl(url)) {
+                    return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
+                }
+                return assetLoader.shouldInterceptRequest(request.url)
+            }
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
@@ -82,7 +112,26 @@ class MainActivity : AppCompatActivity() {
             else -> webView.loadUrl("file:///android_asset/hub/offline.html")
         }
 
+        if (cached && wikiManager.getIndexStatus(def.id) != IndexStatus.READY) {
+            lifecycleScope.launch {
+                WikiSearchIndexer(this@MainActivity).indexWiki(def.id)
+            }
+        }
         wikiManager.syncIfNeeded(def)
+    }
+
+    private fun openPage(wikiId: String, pageUrl: String) {
+        val cached = wikiManager.isCached(wikiId)
+        val online = wikiManager.isNetworkAvailable()
+
+        when {
+            cached -> webView.loadUrl(wikiManager.localPageUrl(wikiId, pageUrl))
+            online -> {
+                val def = WikiRegistry.getById(wikiId) ?: return
+                webView.loadUrl(def.remoteStartUrl)
+            }
+            else -> webView.loadUrl("file:///android_asset/hub/offline.html")
+        }
     }
 
     private fun refreshHub() {
@@ -140,5 +189,41 @@ class MainActivity : AppCompatActivity() {
             wikiManager.toggleFavorite(wikiId)
             runOnUiThread { refreshHub() }
         }
+
+        @android.webkit.JavascriptInterface
+        fun search(query: String, tagsCsv: String?) {
+            val tags = tagsCsv?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }?.toSet()
+                ?: emptySet()
+            lifecycleScope.launch {
+                val results = withContext(Dispatchers.IO) {
+                    searchRepository.search(query, tags)
+                }
+                val payload = buildSearchJson(results)
+                val script = "window.LabWikiHub && window.LabWikiHub.onSearchResults && " +
+                    "window.LabWikiHub.onSearchResults($payload);"
+                webView.post { webView.evaluateJavascript(script, null) }
+            }
+        }
+    }
+
+    private fun buildSearchJson(results: List<com.labwiki.app.ui.search.WikiSearchResult>): String {
+        val array = JSONArray()
+        results.forEach { result ->
+            val item = JSONObject()
+            item.put("wikiId", result.wikiId)
+            item.put("wikiName", result.wikiName)
+            item.put("pageUrl", result.pageUrl)
+            item.put("title", result.title)
+            item.put("snippet", result.snippet)
+            array.put(item)
+        }
+        val root = JSONObject()
+        root.put("results", array)
+        return root.toString()
+    }
+
+    private fun isRemoteUrl(url: String): Boolean {
+        if (!url.startsWith("http")) return false
+        return !url.startsWith("https://appassets.androidplatform.net/")
     }
 }

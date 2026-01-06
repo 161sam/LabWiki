@@ -9,6 +9,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.labwiki.app.data.db.WikiDatabase
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -23,6 +24,10 @@ class WikiManager(private val context: Context) {
 
     fun localUrl(id: String): String {
         return "https://appassets.androidplatform.net/wiki/$id/index.html"
+    }
+
+    fun localPageUrl(id: String, pageUrl: String): String {
+        return "https://appassets.androidplatform.net/wiki/$id/$pageUrl"
     }
 
     fun syncIfNeeded(def: WikiDef) {
@@ -83,9 +88,29 @@ class WikiManager(private val context: Context) {
     fun getLastSyncTimestamp(wikiId: String): Long =
         prefs.getLong(syncTimeKey(wikiId), 0L)
 
+    fun setIndexStatus(wikiId: String, status: IndexStatus) {
+        prefs.edit().putString(indexStatusKey(wikiId), status.value).apply()
+    }
+
+    fun getIndexStatus(wikiId: String): IndexStatus {
+        val raw = prefs.getString(indexStatusKey(wikiId), IndexStatus.NONE.value)
+            ?: IndexStatus.NONE.value
+        return IndexStatus.from(raw)
+    }
+
     fun clearCache() {
         val wikiDir = File(context.filesDir, "wiki")
         if (wikiDir.exists()) wikiDir.deleteRecursively()
+
+        Thread { WikiDatabase.get(context).clearAllTables() }.start()
+
+        val editor = prefs.edit()
+        for (def in WikiRegistry.wikis) {
+            editor.remove(syncStateKey(def.id))
+            editor.remove(syncTimeKey(def.id))
+            editor.remove(indexStatusKey(def.id))
+        }
+        editor.apply()
     }
 
     fun getHubStateJson(): String {
@@ -96,10 +121,14 @@ class WikiManager(private val context: Context) {
         for (def in WikiRegistry.wikis) {
             val item = JSONObject()
             item.put("id", def.id)
+            item.put("name", def.name)
+            item.put("description", def.description)
+            item.put("tags", JSONArray(def.tags))
             item.put("cached", isCached(def.id))
             item.put("favorite", isFavorite(def.id))
             item.put("syncState", getSyncState(def.id).value)
             item.put("lastSync", getLastSyncTimestamp(def.id))
+            item.put("indexStatus", getIndexStatus(def.id).value)
             list.put(item)
         }
 
@@ -110,6 +139,7 @@ class WikiManager(private val context: Context) {
 
     private fun syncStateKey(id: String) = "sync_state_$id"
     private fun syncTimeKey(id: String) = "sync_time_$id"
+    private fun indexStatusKey(id: String) = "index_status_$id"
 
     companion object {
         private const val PREFS_NAME = "labwiki_prefs"
@@ -126,5 +156,17 @@ enum class SyncState(val value: String) {
     companion object {
         fun from(raw: String): SyncState =
             values().firstOrNull { it.value == raw } ?: IDLE
+    }
+}
+
+enum class IndexStatus(val value: String) {
+    NONE("none"),
+    BUILDING("building"),
+    READY("ready"),
+    ERROR("error");
+
+    companion object {
+        fun from(raw: String): IndexStatus =
+            values().firstOrNull { it.value == raw } ?: NONE
     }
 }
