@@ -13,6 +13,7 @@
       color: #1f2a44;
     }
     h1 { margin-top: 0; }
+    h2 { margin-top: 32px; }
     .grid {
       display: grid;
       gap: 16px;
@@ -30,12 +31,13 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       position: relative;
     }
-    .card h2 { margin: 0; font-size: 18px; }
+    .card h3 { margin: 0; font-size: 18px; }
     .meta {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-      font-size: 14px;
+      font-size: 13px;
       color: #5c6b85;
     }
     .favorite-btn {
@@ -54,68 +56,85 @@
       font-size: 14px;
       color: #5c6b85;
     }
+    .search-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 16px 0 24px;
+      padding: 16px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .search-bar input {
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #d6dbe6;
+      font-size: 15px;
+    }
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .tag-chip {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid #d6dbe6;
+      background: #f3f6fb;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .tag-chip.active {
+      background: #1f2a44;
+      color: white;
+      border-color: #1f2a44;
+    }
+    .results {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .result-item {
+      background: white;
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .result-item h3 { margin: 0 0 6px 0; font-size: 16px; }
+    .result-item p { margin: 4px 0 0; color: #5c6b85; font-size: 13px; }
+    .offline-banner {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: #ffe6e6;
+      color: #8a1f1f;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .offline-banner.active { display: block; }
   </style>
 </head>
 <body>
   <h1>LabWiki Hub</h1>
   <p>Wähle ein Wiki aus. Inhalte werden bei Bedarf lokal gespeichert.</p>
 
-  <div class="grid">
-    <div class="card" data-id="pentest-lab">
-      <button class="favorite-btn" data-action="favorite">☆</button>
-      <h2>Pentest Lab</h2>
-      <p>Beispiel-Wiki mit Platzhalter-URLs.</p>
-      <div class="meta">
-        <span class="cache-status">❌ Nicht gespeichert</span>
-        <span class="sync-status">-</span>
-      </div>
-      <a class="open-link" href="app://openWiki?wiki=pentest-lab">Öffnen</a>
-    </div>
+  <div id="offlineBanner" class="offline-banner">Offline-Modus aktiv – es werden nur lokale Inhalte verwendet.</div>
 
-    <div class="card" data-id="networking">
-      <button class="favorite-btn" data-action="favorite">☆</button>
-      <h2>Networking</h2>
-      <p>Netzwerk-Labs und Grundlagen.</p>
-      <div class="meta">
-        <span class="cache-status">❌ Nicht gespeichert</span>
-        <span class="sync-status">-</span>
-      </div>
-      <a class="open-link" href="app://openWiki?wiki=networking">Öffnen</a>
-    </div>
+  <section class="search-bar">
+    <input id="searchInput" type="search" placeholder="Globale Suche über alle lokalen Wikis" />
+    <div id="tagFilters" class="tag-row"></div>
+  </section>
 
-    <div class="card" data-id="reverse-engineering">
-      <button class="favorite-btn" data-action="favorite">☆</button>
-      <h2>Reverse Engineering</h2>
-      <p>Analysen, Tools und Workflows.</p>
-      <div class="meta">
-        <span class="cache-status">❌ Nicht gespeichert</span>
-        <span class="sync-status">-</span>
-      </div>
-      <a class="open-link" href="app://openWiki?wiki=reverse-engineering">Öffnen</a>
-    </div>
+  <section>
+    <h2>Suchergebnisse</h2>
+    <div id="searchResults" class="results"></div>
+  </section>
 
-    <div class="card" data-id="cloud-security">
-      <button class="favorite-btn" data-action="favorite">☆</button>
-      <h2>Cloud Security</h2>
-      <p>Best Practices &amp; Checklisten.</p>
-      <div class="meta">
-        <span class="cache-status">❌ Nicht gespeichert</span>
-        <span class="sync-status">-</span>
-      </div>
-      <a class="open-link" href="app://openWiki?wiki=cloud-security">Öffnen</a>
-    </div>
-
-    <div class="card" data-id="forensics">
-      <button class="favorite-btn" data-action="favorite">☆</button>
-      <h2>Forensics</h2>
-      <p>Artefakte, Tools und Playbooks.</p>
-      <div class="meta">
-        <span class="cache-status">❌ Nicht gespeichert</span>
-        <span class="sync-status">-</span>
-      </div>
-      <a class="open-link" href="app://openWiki?wiki=forensics">Öffnen</a>
-    </div>
-  </div>
+  <section>
+    <h2>Wikis</h2>
+    <div id="wikiGrid" class="grid"></div>
+  </section>
 
   <p class="hint">Offline-Modus: Öffne ein Wiki einmal online, um es zu cachen.</p>
 
@@ -127,6 +146,17 @@
       "up-to-date": "Aktuell"
     };
 
+    const indexLabels = {
+      "none": "NONE",
+      "building": "BUILDING",
+      "ready": "READY",
+      "error": "ERROR"
+    };
+
+    let hubState = null;
+    const selectedTags = new Set();
+    let searchTimer = null;
+
     function formatSyncText(item, hasNetwork) {
       if (!hasNetwork) return "Offline";
       return stateLabels[item.syncState] || "Aktuell";
@@ -135,28 +165,134 @@
     function refreshHub() {
       if (!window.LabWiki || !window.LabWiki.getHubState) return;
       const raw = window.LabWiki.getHubState();
-      const state = JSON.parse(raw);
+      hubState = JSON.parse(raw);
+      renderHub();
+    }
 
-      const cards = document.querySelectorAll(".card[data-id]");
-      cards.forEach((card) => {
-        const id = card.getAttribute("data-id");
-        const item = state.wikis.find((entry) => entry.id === id);
-        if (!item) return;
+    function renderHub() {
+      if (!hubState) return;
+      renderOfflineBanner(hubState.hasNetwork);
+      renderTags(hubState.wikis);
+      renderWikis(hubState.wikis);
+      triggerSearch();
+    }
 
-        const cacheStatus = card.querySelector(".cache-status");
-        const syncStatus = card.querySelector(".sync-status");
-        const favoriteBtn = card.querySelector(".favorite-btn");
+    function renderOfflineBanner(hasNetwork) {
+      const banner = document.getElementById("offlineBanner");
+      if (hasNetwork) {
+        banner.classList.remove("active");
+      } else {
+        banner.classList.add("active");
+      }
+    }
 
+    function renderTags(wikis) {
+      const tagContainer = document.getElementById("tagFilters");
+      const tags = new Set();
+      wikis.forEach((wiki) => (wiki.tags || []).forEach((tag) => tags.add(tag)));
+      tagContainer.innerHTML = "";
+      Array.from(tags).sort().forEach((tag) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "tag-chip" + (selectedTags.has(tag) ? " active" : "");
+        chip.textContent = tag;
+        chip.dataset.tag = tag;
+        chip.addEventListener("click", () => {
+          if (selectedTags.has(tag)) {
+            selectedTags.delete(tag);
+          } else {
+            selectedTags.add(tag);
+          }
+          renderHub();
+        });
+        tagContainer.appendChild(chip);
+      });
+    }
+
+    function renderWikis(wikis) {
+      const grid = document.getElementById("wikiGrid");
+      grid.innerHTML = "";
+      const filtered = wikis.filter((wiki) => {
+        if (selectedTags.size === 0) return true;
+        return (wiki.tags || []).some((tag) => selectedTags.has(tag));
+      });
+
+      filtered.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.dataset.id = item.id;
+
+        const favoriteBtn = document.createElement("button");
+        favoriteBtn.className = "favorite-btn" + (item.favorite ? " active" : "");
+        favoriteBtn.dataset.action = "favorite";
+        favoriteBtn.textContent = item.favorite ? "★" : "☆";
+
+        const title = document.createElement("h3");
+        title.textContent = item.name;
+
+        const description = document.createElement("p");
+        description.textContent = item.description;
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const cacheStatus = document.createElement("span");
+        cacheStatus.className = "cache-status";
         cacheStatus.textContent = item.cached ? "✅ Offline verfügbar" : "❌ Nicht gespeichert";
-        syncStatus.textContent = formatSyncText(item, state.hasNetwork);
+        const syncStatus = document.createElement("span");
+        syncStatus.className = "sync-status";
+        syncStatus.textContent = formatSyncText(item, hubState.hasNetwork);
+        const indexStatus = document.createElement("span");
+        indexStatus.textContent = "Index: " + (indexLabels[item.indexStatus] || "NONE");
+        meta.append(cacheStatus, syncStatus, indexStatus);
 
-        if (item.favorite) {
-          favoriteBtn.textContent = "★";
-          favoriteBtn.classList.add("active");
-        } else {
-          favoriteBtn.textContent = "☆";
-          favoriteBtn.classList.remove("active");
-        }
+        const tagLine = document.createElement("div");
+        tagLine.className = "meta";
+        tagLine.textContent = (item.tags || []).join(" · ");
+
+        const openLink = document.createElement("a");
+        openLink.className = "open-link";
+        openLink.href = `app://openWiki?wiki=${encodeURIComponent(item.id)}`;
+        openLink.textContent = "Öffnen";
+
+        card.append(favoriteBtn, title, description, meta, tagLine, openLink);
+        grid.appendChild(card);
+      });
+    }
+
+    function triggerSearch() {
+      const input = document.getElementById("searchInput");
+      const query = input.value.trim();
+      if (!query) {
+        renderResults([]);
+        return;
+      }
+      if (!window.LabWiki || !window.LabWiki.search) return;
+      const tagList = Array.from(selectedTags).join(",");
+      window.LabWiki.search(query, tagList);
+    }
+
+    function renderResults(results) {
+      const container = document.getElementById("searchResults");
+      container.innerHTML = "";
+      if (!results || results.length === 0) {
+        container.innerHTML = "<p>Keine Treffer.</p>";
+        return;
+      }
+      results.forEach((item) => {
+        const card = document.createElement("div");
+        card.className = "result-item";
+        const title = document.createElement("h3");
+        title.textContent = item.title || "(Ohne Titel)";
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.textContent = item.wikiName;
+        const snippet = document.createElement("p");
+        snippet.textContent = item.snippet || "";
+        const link = document.createElement("a");
+        link.href = `app://openPage?wiki=${encodeURIComponent(item.wikiId)}&page=${encodeURIComponent(item.pageUrl)}`;
+        link.textContent = "Öffnen";
+        card.append(title, meta, snippet, link);
+        container.appendChild(card);
       });
     }
 
@@ -176,7 +312,19 @@
       }
     });
 
-    window.LabWikiHub = { refresh };
+    document.getElementById("searchInput").addEventListener("input", () => {
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => triggerSearch(), 250);
+    });
+
+    window.LabWikiHub = {
+      refresh: refreshHub,
+      onSearchResults: (payload) => {
+        if (!payload) return;
+        renderResults(payload.results || []);
+      }
+    };
+
     refreshHub();
   </script>
 </body>

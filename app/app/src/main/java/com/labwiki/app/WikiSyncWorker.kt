@@ -3,6 +3,7 @@ package com.labwiki.app
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.labwiki.app.data.db.WikiSearchIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -75,6 +76,7 @@ class WikiSyncWorker(
             val manager = WikiManager(applicationContext)
             manager.setSyncState(wikiId, SyncState.UP_TO_DATE)
             manager.setLastSyncTimestamp(wikiId, System.currentTimeMillis())
+            WikiSearchIndexer(applicationContext).indexWiki(wikiId)
             Result.success()
         } catch (ex: Exception) {
             val manager = WikiManager(applicationContext)
