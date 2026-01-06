@@ -12,44 +12,60 @@ data class WikiDef(
 object WikiRegistry {
     val wikis: List<WikiDef> = listOf(
         WikiDef(
-            id = "pentest-lab",
-            name = "Pentest Lab",
-            description = "Beispiel-Wiki mit Platzhalter-URLs.",
-            remoteStartUrl = "https://example.com/pentest-lab/",
-            remoteOfflineBase = "https://example.com/pentest-lab/offline",
-            tags = listOf("Security", "Pentest")
+            id = "pentest-lab-blue-red-team-training",
+            name = "Pentest Lab: Blue/Red Team Training",
+            description = "Trainingspfade für Blue- und Red-Team-Übungen.",
+            remoteStartUrl = "https://161sam.github.io/pentest-lab-blue-red-team-training/",
+            remoteOfflineBase = "https://161sam.github.io/pentest-lab-blue-red-team-training/offline",
+            tags = listOf("Pentest", "Blue Team", "Red Team")
         ),
         WikiDef(
-            id = "networking",
-            name = "Networking",
-            description = "Netzwerk-Labs und Grundlagen.",
-            remoteStartUrl = "https://example.com/networking/",
-            remoteOfflineBase = "https://example.com/networking/offline",
-            tags = listOf("Networking", "Fundamentals")
+            id = "smolotchi",
+            name = "Smolotchi",
+            description = "Kompakte Labs und Cheatsheets für Pentest-Themen.",
+            remoteStartUrl = "https://161sam.github.io/smolotchi/",
+            remoteOfflineBase = "https://161sam.github.io/smolotchi/offline",
+            tags = listOf("Pentest", "Cheatsheet")
         ),
         WikiDef(
-            id = "reverse-engineering",
-            name = "Reverse Engineering",
-            description = "Analysen, Tools und Workflows.",
-            remoteStartUrl = "https://example.com/reverse-engineering/",
-            remoteOfflineBase = "https://example.com/reverse-engineering/offline",
-            tags = listOf("Security", "Reverse")
+            id = "forensic-playbook",
+            name = "Forensic Playbook",
+            description = "Playbooks und Prozesse für Forensik-Aufgaben.",
+            remoteStartUrl = "https://161sam.github.io/Forensic-Playbook/",
+            remoteOfflineBase = "https://161sam.github.io/Forensic-Playbook/offline",
+            tags = listOf("Forensics", "Incident Response")
         ),
         WikiDef(
-            id = "cloud-security",
-            name = "Cloud Security",
-            description = "Best Practices & Checklisten.",
-            remoteStartUrl = "https://example.com/cloud-security/",
-            remoteOfflineBase = "https://example.com/cloud-security/offline",
-            tags = listOf("Cloud", "Security")
+            id = "pentest-home-lab-sbcs",
+            name = "Pentest Home Lab SBCs",
+            description = "Pentest-Home-Lab-Projekte für Single-Board-Computer.",
+            remoteStartUrl = "https://161sam.github.io/Pentest-Home-Lab-SBCs/",
+            remoteOfflineBase = "https://161sam.github.io/Pentest-Home-Lab-SBCs/offline",
+            tags = listOf("Pentest", "Home Lab", "SBC")
         ),
         WikiDef(
-            id = "forensics",
-            name = "Forensics",
-            description = "Artefakte, Tools und Playbooks.",
-            remoteStartUrl = "https://example.com/forensics/",
-            remoteOfflineBase = "https://example.com/forensics/offline",
-            tags = listOf("Forensics", "Investigation")
+            id = "pentest-lab-shannon",
+            name = "Pentest Lab Shannon",
+            description = "Labs und Notizen für das Shannon-Pentest-Lab.",
+            remoteStartUrl = "https://161sam.github.io/Pentest-Lab-shannon/",
+            remoteOfflineBase = "https://161sam.github.io/Pentest-Lab-shannon/offline",
+            tags = listOf("Pentest", "Lab")
+        ),
+        WikiDef(
+            id = "pentest-lab-cai",
+            name = "Pentest Lab CAI",
+            description = "Pentest-Lab-Inhalte rund um CAI.",
+            remoteStartUrl = "https://161sam.github.io/Pentest-Lab-CAI/",
+            remoteOfflineBase = "https://161sam.github.io/Pentest-Lab-CAI/offline",
+            tags = listOf("Pentest", "Lab")
+        ),
+        WikiDef(
+            id = "pentest-lab-pentestgpt",
+            name = "Pentest Lab PentestGPT",
+            description = "Guides und Übungen zum PentestGPT-Lab.",
+            remoteStartUrl = "https://161sam.github.io/Pentest-Lab-PentestGPT/",
+            remoteOfflineBase = "https://161sam.github.io/Pentest-Lab-PentestGPT/offline",
+            tags = listOf("Pentest", "AI")
         )
     )
 
