@@ -2,8 +2,8 @@ package com.labwiki.app
 
 import android.content.Context
 import androidx.work.CoroutineWorker
+import androidx.work.Data
 import androidx.work.WorkerParameters
-import com.labwiki.app.data.db.WikiSearchIndexer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -77,19 +77,27 @@ class WikiSyncWorker(
             }
 
             val manager = WikiManager(applicationContext)
+            manager.setOfflineBundleSupported(wikiId, true)
             manager.setSyncState(wikiId, SyncState.UP_TO_DATE)
             manager.setLastSyncTimestamp(wikiId, System.currentTimeMillis())
-            WikiSearchIndexer(applicationContext).indexWiki(wikiId)
-            Result.success()
-        } catch (ex: Exception) {
+            val status = if (needsUpdate) RESULT_SYNCED else RESULT_UP_TO_DATE
+            Result.success(Data.Builder().putString(KEY_RESULT_STATUS, status).build())
+        } catch (ex: OfflineBundleMissingException) {
             val manager = WikiManager(applicationContext)
-            manager.setSyncState(wikiId, SyncState.ERROR)
+            manager.setOfflineBundleSupported(wikiId, false)
+            manager.setSyncState(wikiId, SyncState.IDLE)
+            Result.success(Data.Builder().putString(KEY_RESULT_STATUS, RESULT_BUNDLE_MISSING).build())
+        } catch (ex: Exception) {
+            if (runAttemptCount >= 2) {
+                return@withContext Result.failure()
+            }
             Result.retry()
         }
     }
 
     private fun fetchTextWithFallback(bases: List<String>, path: String): FetchResult {
         var lastError: Exception? = null
+        var notFoundCount = 0
         for (base in bases) {
             val url = "$base/$path"
             try {
@@ -99,6 +107,7 @@ class WikiSyncWorker(
                 connection.instanceFollowRedirects = true
                 val code = connection.responseCode
                 if (code == HttpURLConnection.HTTP_NOT_FOUND) {
+                    notFoundCount += 1
                     continue
                 }
                 if (code >= 400) {
@@ -110,11 +119,15 @@ class WikiSyncWorker(
                 lastError = ex
             }
         }
+        if (notFoundCount == bases.size) {
+            throw OfflineBundleMissingException("No bundle for $path")
+        }
         throw lastError ?: IllegalStateException("No reachable base for $path")
     }
 
     private fun downloadFileWithFallback(bases: List<String>, path: String, destination: File) {
         var lastError: Exception? = null
+        var notFoundCount = 0
         for (base in bases) {
             val url = "$base/$path"
             try {
@@ -124,6 +137,7 @@ class WikiSyncWorker(
                 connection.instanceFollowRedirects = true
                 val code = connection.responseCode
                 if (code == HttpURLConnection.HTTP_NOT_FOUND) {
+                    notFoundCount += 1
                     continue
                 }
                 if (code >= 400) {
@@ -139,6 +153,9 @@ class WikiSyncWorker(
                 lastError = ex
             }
         }
+        if (notFoundCount == bases.size) {
+            throw OfflineBundleMissingException("No bundle for $path")
+        }
         throw lastError ?: IllegalStateException("No reachable base for $path")
     }
 
@@ -151,6 +168,7 @@ class WikiSyncWorker(
     }
 
     private data class FetchResult(val base: String, val body: String)
+    private class OfflineBundleMissingException(message: String) : Exception(message)
 
     private fun unzip(zipFile: File, destDir: File) {
         ZipInputStream(BufferedInputStream(zipFile.inputStream())).use { zis ->
@@ -189,5 +207,9 @@ class WikiSyncWorker(
     companion object {
         const val KEY_WIKI_ID = "wiki_id"
         const val KEY_REMOTE_OFFLINE_BASE = "remote_offline_base"
+        const val KEY_RESULT_STATUS = "result_status"
+        const val RESULT_SYNCED = "synced"
+        const val RESULT_UP_TO_DATE = "up-to-date"
+        const val RESULT_BUNDLE_MISSING = "bundle-missing"
     }
 }

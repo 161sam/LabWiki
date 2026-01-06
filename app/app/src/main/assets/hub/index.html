@@ -159,6 +159,7 @@
 
     function formatSyncText(item, hasNetwork) {
       if (!hasNetwork) return "Offline";
+      if (item.offlineBundleSupported === false) return "Online-only";
       return stateLabels[item.syncState] || "Aktuell";
     }
 
