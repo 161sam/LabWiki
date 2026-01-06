@@ -34,8 +34,6 @@ class WikiManager(private val context: Context) {
     fun syncIfNeeded(def: WikiDef) {
         if (!isOnlineForSync()) return
 
-        setSyncState(def.id, SyncState.SYNCING)
-
         val data = Data.Builder()
             .putString(WikiSyncWorker.KEY_WIKI_ID, def.id)
             .putString(WikiSyncWorker.KEY_REMOTE_OFFLINE_BASE, def.remoteOfflineBase)
@@ -111,6 +109,13 @@ class WikiManager(private val context: Context) {
         prefs.edit().putString(indexStatusKey(wikiId), status.value).apply()
     }
 
+    fun setOfflineBundleSupported(wikiId: String, supported: Boolean) {
+        prefs.edit().putBoolean(offlineBundleKey(wikiId), supported).apply()
+    }
+
+    fun isOfflineBundleSupported(wikiId: String): Boolean =
+        prefs.getBoolean(offlineBundleKey(wikiId), true)
+
     fun getIndexStatus(wikiId: String): IndexStatus {
         val raw = prefs.getString(indexStatusKey(wikiId), IndexStatus.NONE.value)
             ?: IndexStatus.NONE.value
@@ -128,6 +133,7 @@ class WikiManager(private val context: Context) {
             editor.remove(syncStateKey(def.id))
             editor.remove(syncTimeKey(def.id))
             editor.remove(indexStatusKey(def.id))
+            editor.remove(offlineBundleKey(def.id))
         }
         editor.apply()
     }
@@ -148,6 +154,7 @@ class WikiManager(private val context: Context) {
             item.put("syncState", getSyncState(def.id).value)
             item.put("lastSync", getLastSyncTimestamp(def.id))
             item.put("indexStatus", getIndexStatus(def.id).value)
+            item.put("offlineBundleSupported", isOfflineBundleSupported(def.id))
             list.put(item)
         }
 
@@ -159,6 +166,7 @@ class WikiManager(private val context: Context) {
     private fun syncStateKey(id: String) = "sync_state_$id"
     private fun syncTimeKey(id: String) = "sync_time_$id"
     private fun indexStatusKey(id: String) = "index_status_$id"
+    private fun offlineBundleKey(id: String) = "offline_bundle_supported_$id"
 
     companion object {
         private const val PREFS_NAME = "labwiki_prefs"
